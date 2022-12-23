@@ -514,13 +514,9 @@ partial {{classOrStructOrRecord}} {{TypeName}}
         {
             {{(IsValueType ? "" : "if (value == null)")}}
             {
-{{Members.Where(x => x.Symbol != null).Select(x => $"               __{x.Name} = default!;").NewLine()}}
+                value = new {{TypeName}}();
             }
-{{(IsValueType ? "#if false" : "            else")}}
-            {
-{{Members.Where(x => x.Symbol != null).Select(x => $"               __{x.Name} = value.@{x.Name};").NewLine()}}
-            }
-{{(IsValueType ? "#endif" : "")}}
+{{Members.Where(x => x.Symbol != null).Select(x => $"           __{x.Name} = value.@{x.Name};").NewLine()}}
 
             if (count == 0) goto SKIP_READ;
 {{Members.Select((x, i) => "            " + x.EmitReadRefDeserialize(x.Order, GenerateType is GenerateType.VersionTolerant or GenerateType.CircularReference) + $" if (count == {i + 1}) goto SKIP_READ;").NewLine()}}
