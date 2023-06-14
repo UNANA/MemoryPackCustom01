@@ -356,13 +356,23 @@ public partial class TypeMeta
             // check ctor members
             if (this.Constructor != null)
             {
-                var nameDict = new HashSet<string>(Members.Where(x => x.IsConstructorParameter).Select(x => x.Name), StringComparer.OrdinalIgnoreCase);
-                var allParameterExists = this.Constructor.Parameters.All(x => nameDict.Contains(x.Name));
-                if (!allParameterExists)
+                foreach (var parameter in Constructor.Parameters)
                 {
-                    var location = Constructor.Locations.FirstOrDefault() ?? syntax.Identifier.GetLocation();
+                    if (!Members.ContainsConstructorParameter(parameter))
+                    {
+                        var location = Constructor.Locations.FirstOrDefault() ?? syntax.Identifier.GetLocation();
 
-                    context.ReportDiagnostic(Diagnostic.Create(DiagnosticDescriptors.ConstructorHasNoMatchedParameter, location, Symbol.Name));
+                        context.ReportDiagnostic(Diagnostic.Create(DiagnosticDescriptors.ConstructorHasNoMatchedParameter, location, Symbol.Name, parameter.Name));
+                        noError = false;
+                    }
+                }
+            }
+
+            foreach (var item in Members)
+            {
+                if (item.IsField && ((IFieldSymbol)item.Symbol).IsReadOnly && !item.IsConstructorParameter)
+                {
+                    context.ReportDiagnostic(Diagnostic.Create(DiagnosticDescriptors.ReadOnlyFieldMustBeConstructorMember, item.GetLocation(syntax), Symbol.Name, item.Name));
                     noError = false;
                 }
             }
@@ -398,9 +408,9 @@ public partial class TypeMeta
             }
         }
 
-        // Member override member can't annotate[Ignore][Include]
         if (Symbol.BaseType != null)
         {
+            // Member override member can't annotate[Ignore][Include]
             foreach (var item in Symbol.GetAllMembers(withoutOverride: false))
             {
                 if (item.IsOverride)
@@ -415,6 +425,19 @@ public partial class TypeMeta
                         context.ReportDiagnostic(Diagnostic.Create(DiagnosticDescriptors.OverrideMemberCantAddAnnotation, location, Symbol.Name, item.Name, attr));
                         noError = false;
                     }
+                }
+            }
+
+            // inherit type can not serialize parent private member
+            foreach (var item in Symbol.GetParentMembers())
+            {
+                var include = item.ContainsAttribute(reference.MemoryPackIncludeAttribute);
+                var ignore = item.ContainsAttribute(reference.MemoryPackIgnoreAttribute);
+                if (include && item.DeclaredAccessibility == Accessibility.Private)
+                {
+                    var location = item.Locations.FirstOrDefault() ?? syntax.Identifier.GetLocation();
+                    context.ReportDiagnostic(Diagnostic.Create(DiagnosticDescriptors.InheritTypeCanNotIncludeParentPrivateMember, location, Symbol.Name, item.Name));
+                    noError = false;
                 }
             }
         }
@@ -460,6 +483,21 @@ public partial class TypeMeta
                 {
                     context.ReportDiagnostic(Diagnostic.Create(DiagnosticDescriptors.AllMembersMustAnnotateOrder, item.GetLocation(syntax), Symbol.Name, item.Name));
                     noError = false;
+                }
+            }
+
+            // don't allow duplicate order
+            var orderSet = new Dictionary<int, MemberMeta>(Members.Length);
+            foreach (var item in Members)
+            {
+                if (orderSet.TryGetValue(item.Order, out var duplicateMember))
+                {
+                    context.ReportDiagnostic(Diagnostic.Create(DiagnosticDescriptors.DuplicateOrderDoesNotAllow, item.GetLocation(syntax), Symbol.Name, item.Name, duplicateMember.Name));
+                    noError = false;
+                }
+                else
+                {
+                    orderSet.Add(item.Order, item);
                 }
             }
 
@@ -567,6 +605,7 @@ partial class MemberMeta
     public bool IsSettable { get; }
     public bool IsAssignable { get; }
     public bool IsConstructorParameter { get; }
+    public string? ConstructorParameterName { get; }
     public int Order { get; }
     public bool HasExplicitOrder { get; }
     public MemberKind Kind { get; }
@@ -599,7 +638,8 @@ partial class MemberMeta
 
         if (constructor != null)
         {
-            this.IsConstructorParameter = constructor.Parameters.Any(x => x.Name.Equals(Name, StringComparison.OrdinalIgnoreCase));
+            this.IsConstructorParameter = constructor.TryGetConstructorParameter(symbol, out var constructorParameterName);
+            this.ConstructorParameterName = constructorParameterName;
         }
         else
         {

@@ -52,7 +52,7 @@ internal static class DiagnosticDescriptors
     public static readonly DiagnosticDescriptor ConstructorHasNoMatchedParameter = new(
         id: "MEMPACK006",
         title: "MemoryPackObject's constructor has no matched parameter",
-        messageFormat: "The MemoryPackable object '{0}' constructor's all parameters must match serialized member name(case-insensitive)",
+        messageFormat: "The MemoryPackable object '{0}' constructor's parameter '{1}' must match a serialized member name(case-insensitive)",
         category: Category,
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
@@ -289,6 +289,30 @@ internal static class DiagnosticDescriptors
         id: "MEMPACK035",
         title: "Unamanged strcut does not allow [MemoryPackConstructor]",
         messageFormat: "The unamanged struct '{0}' can not annotate with [MemoryPackConstructor] because don't call any constructors",
+        category: Category,
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
+
+    public static readonly DiagnosticDescriptor InheritTypeCanNotIncludeParentPrivateMember = new(
+        id: "MEMPACK036",
+        title: "Inherit type can not include private member",
+        messageFormat: "Type '{0}' can not include parent type's private member '{1}'",
+        category: Category,
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
+
+    public static readonly DiagnosticDescriptor ReadOnlyFieldMustBeConstructorMember = new(
+        id: "MEMPACK037",
+        title: "Readonly field must be constructor member",
+        messageFormat: "Type '{0}' readonly field '{1}' must be constructor member",
+        category: Category,
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
+
+    public static readonly DiagnosticDescriptor DuplicateOrderDoesNotAllow = new(
+        id: "MEMPACK038",
+        title: "All members order must be unique",
+        messageFormat: "The MemoryPackable object '{0}' member '{1}' is duplicated order between '{2}'.",
         category: Category,
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);

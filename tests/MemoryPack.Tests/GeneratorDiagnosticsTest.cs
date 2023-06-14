@@ -577,6 +577,71 @@ public partial struct Hoge
     }
 
 
+    [Fact]
+    public void MEMPACK036_InheritTypeCanNotIncludeParentPrivateMember()
+    {
+        Compile(36, """
+using MemoryPack;
+
+[MemoryPackable(SerializeLayout.Explicit)]
+public  partial class TestParent2
+{
+    [MemoryPackOrder(0)]
+    public int A;
+
+    [MemoryPackOrder(1), MemoryPackInclude]
+    private int B;
+
+    [MemoryPackOrder(2)]
+    public int C;
+}
+
+[MemoryPackable(SerializeLayout.Explicit)]
+public sealed partial class TestChild2 : TestParent2
+{
+    [MemoryPackOrder(3)]
+    public int D;
+}
+""");
+    }
+
+
+    [Fact]
+    public void MEMPACK037_ReadOnlyFieldMustBeConstructorMember()
+    {
+        Compile(37, """
+using MemoryPack;
+
+[MemoryPackable]
+public partial class ReadOnlyTest
+{
+    public readonly int A;
+}
+
+""");
+    }
+
+    [Fact]
+    public void MEMPACK038_()
+    {
+        Compile(38, """
+using MemoryPack;
+
+[MemoryPackable(GenerateType.VersionTolerant)]
+public partial class Tester
+{
+    [MemoryPackOrder(0)]
+    public int I1 { get; set; }
+
+    [MemoryPackOrder(0)]
+    public string S1 { get; set; }
+
+    [MemoryPackOrder(1)]
+    public bool B1 { get; set; }
+}
+
+""");
+    }
 }
 
 
