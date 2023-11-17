@@ -350,10 +350,12 @@ public partial class TypeMeta
 partial {{classOrStructOrRecord}} {{TypeName}} : IMemoryPackable<{{TypeName}}>{{fixedSizeInterface}}
 {
 {{EmitCustomFormatters()}}
+    static partial void StaticConstructor();
 
     static {{Symbol.Name}}()
     {
         {{registerT}}
+        StaticConstructor();
     }
 {{fixedSizeMethod}}
     [global::MemoryPack.Internal.Preserve]
@@ -937,9 +939,12 @@ partial {{classOrStructOrRecord}} {{TypeName}}
 
 partial {{classOrInterfaceOrRecord}} {{TypeName}} : IMemoryPackFormatterRegister
 {
+    static partial void StaticConstructor();
+
     static {{Symbol.Name}}()
     {
         {{register}}
+        StaticConstructor();
     }
 
     [global::MemoryPack.Internal.Preserve]
@@ -1187,9 +1192,12 @@ public static class {{initializerName}}
         var code = $$"""
 partial class {{TypeName}} : IMemoryPackFormatterRegister
 {
+    static partial void StaticConstructor();
+
     static {{Symbol.Name}}()
     {
         {{register}}
+        StaticConstructor();
     }
 
     {{staticRegisterFormatterMethod}}RegisterFormatter()
